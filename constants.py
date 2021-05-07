@@ -1,6 +1,6 @@
 ########## CONSTANTS ARCHIVE ###########
 
-# Simulation Environment Constants
+### Simulation Environment Constants ###
 
 # Screen
 WIDTH, HEIGHT = 1000, 700
@@ -9,3 +9,6 @@ WIDTH, HEIGHT = 1000, 700
 FORWARD = 1
 RIGHT = 2
 LEFT = 3
+
+### Evaluation Constants ###
+LOOP_ITERATIONS_LIMIT = 3000

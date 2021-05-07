@@ -1,24 +1,53 @@
-import pygame
-
-from robotclass import Robot
-from random import randint, choice
-from time import time
 from evolutiveclass import Evolutive
-
-import math
+from trackclass import Track, trackVertices
 
 class Simulation:
-    def __init__(self, track):
-        self.track = track
-        self.evolutive = Evolutive(1)
-        lineSensors = self.evolutive.sensorInit()
-        self.robot = Robot(track.vertices[0], lineSensors)        
+    
+    def __init__(self):
+        self.track = Track(trackVertices)
+        self.evolutive = Evolutive()
+        self.curRobot = self.evolutive.robotInit(self.track, 0)
+
+        # Robot evaluation parameters
+        self.curRobotIndex = 0
+        self.robotFailed = False
+        self.completeCourse = False # TODO
+
+        self.checkpoints = self.track.vertices
+        self.isRobotOnTrack = True
+        self.isRobotInLoop = False
+        self.didRobotMissCourse = False
 
     def run(self):
-        self.robot.updateLineSensorsPosition(self.track)
-        self.robot.move()
+        self.curRobot.updateLineSensorsPosition(self.track)
+        self.curRobot.move()
+        self.isRobotOnTrack = self.curRobot.isOnTheTrack(self.track)
+        self.isRobotInLoop = self.curRobot.checkRobotInLoop()
+        self.didRobotMissCourse = self.curRobot.checkMissCourse()
 
-    def show(self, screen):      
-        self.robot.isOnTheLine(self.track)
-        self.track.show(screen)
-        self.robot.show(screen)
+        # Checks if the robot is on the track in it's course
+        if not self.isRobotOnTrack:
+            self.robotFailed = True
+            print("Out of the Track")
+
+        # TODO Checks if the robot has missed the course
+        elif self.isRobotInLoop:
+            self.robotFailed = True
+            print("robot has entered in a loop")
+
+        # Checks if the robot has entered a loop
+        elif self.didRobotMissCourse:
+            self.robotFailed = True
+            print("robot missed the course")
+
+        if self.robotFailed:
+            self.robotFailed = False
+            self.curRobotIndex += 1
+            if self.curRobotIndex == 30: self.curRobotIndex = 0 # TODO evolutive part of the simulation here
+            self.curRobot = self.evolutive.robotInit(self.track, self.curRobotIndex)
+
+
+    def show(self, screen): 
+    	self.run()
+    	self.track.show(screen)
+    	self.curRobot.show(screen)
