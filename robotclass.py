@@ -1,7 +1,7 @@
 import math
 import pygame
 from trackclass import Track
-from constants import FORWARD, RIGHT, LEFT, LOOP_ITERATIONS_LIMIT
+from constants import FORWARD, RIGHT, LEFT, LOOP_ITERATIONS_LIMIT, NUMBER_OF_LAPS_IN_A_COURSE
 
 
 class Sensor:
@@ -40,121 +40,146 @@ class LineSensor(Sensor):
         self.position = (x,y)
         
 class Robot:
-	def __init__(self, startingPosition, lineSensors, checkpoints):
-		# Initiation parameters
-		self.center = startingPosition
-		self.lineSensors = lineSensors
-		self.checkpointsToReach = checkpoints    
+    def __init__(self, startingPosition, lineSensors, checkpoints):
+        # Initiation parameters
+        self.center = startingPosition
+        self.lineSensors = lineSensors
+        self.checkpointsToReach = checkpoints    
 
-		# Movement parameters
-		self.theta = 0
-		self.dTheta = 8
-		self.velocity = 4
-		self.direction = 0
+        # Movement parameters
+        self.theta = 0
+        self.dTheta = 5
+        self.velocity = 4
+        self.direction = 0
 
-		# Parameters for robot evalutaion:
-		# -Track proximity sensor
-		self.numberEdgeSensors = 100
-		self.edgeRadius = 35
-		self.edgeSensors = [BorderSensor((255, 255, 25), 1, self.numberEdgeSensors, i+1) for i in range(self.numberEdgeSensors)]
+        # Parameters for robot evalutaion:
+        # -Track proximity sensor
+        self.numberEdgeSensors = 100
+        self.edgeRadius = 30
+        self.edgeSensors = [BorderSensor((255, 255, 25), 1, self.numberEdgeSensors, i+1) for i in range(self.numberEdgeSensors)]
 
-		# -Evaluate the course of the robot
-		self.numberCheckpointsReached = 0
-		self.penultimateCheckpointReached = self.checkpointsToReach[len(self.checkpointsToReach)-1]
-		self.nextCheckpointToReach = self.checkpointsToReach[self.numberCheckpointsReached]
+        # -Evaluate the course of the robot
+        self.numberCheckpointsReached = 0
+        self.penultimateCheckpointReached = self.checkpointsToReach[len(self.checkpointsToReach)-1] # Parameter to check if the robot is on a wrong course
+        self.nextCheckpointToReach = self.checkpointsToReach[self.numberCheckpointsReached]
+        self.completeLaps = 0
 
-		# -Looping Check:
-		self.iterations = 0
-		self.loopIterationsCounter = 0
+        # -Looping Check:
+        self.iterations = 0 # The iteration's number will simulate the time it took the robot to complete its course
+        self.loopIterationsCounter = 0
 
-	def checkpointReached(self):
-		x0 = self.center[0]
-		y0 = self.center[1]
-		x1 = self.nextCheckpointToReach[0]
-		y1 = self.nextCheckpointToReach[1]
+    def checkpointReached(self):
+        x0 = self.center[0]
+        y0 = self.center[1]
+        x1 = self.nextCheckpointToReach[0]
+        y1 = self.nextCheckpointToReach[1]
 
-		if ((x1 - x0)**2 + (y1 - y0)**2 <= self.edgeRadius**2):
-			if self.numberCheckpointsReached > 1:
-				self.penultimateCheckpointReached =  self.checkpointsToReach[self.numberCheckpointsReached - 2]
-			self.numberCheckpointsReached += 1
-			self.nextCheckpointToReach = self.checkpointsToReach[self.numberCheckpointsReached]
+        # Check colision of the robot and the checkpoints and update checkpoints variables
+        if ((x1 - x0)**2 + (y1 - y0)**2 <= (self.edgeRadius+15)**2):
+            if self.numberCheckpointsReached > 1:
+                self.penultimateCheckpointReached =  self.checkpointsToReach[self.numberCheckpointsReached - 2]
+            self.numberCheckpointsReached += 1
 
-			return True
+            # If only 1 checkpoint is missing
+            if self.numberCheckpointsReached == len(self.checkpointsToReach):
+                self.nextCheckpointToReach = self.checkpointsToReach[0]
 
-		return False
+            # If the robot complete a lap
+            elif self.numberCheckpointsReached == (len(self.checkpointsToReach) + 1):
+                self.completeLaps += 1
 
-	def move(self):
-		if self.direction == FORWARD:
-			x = self.center[0] + math.cos(self.theta) * self.velocity
-			y = self.center[1] + math.sin(self.theta) * self.velocity            
-			self.center = (x, y)
+                self.numberCheckpointsReached = 0
+                self.penultimateCheckpointReached = self.checkpointsToReach[len(self.checkpointsToReach)-1]
+                self.nextCheckpointToReach = self.checkpointsToReach[self.numberCheckpointsReached]
 
-		elif self.direction == LEFT:
-			self.theta -= self.dTheta * ((2*math.pi)/360)
+            else:
+                self.nextCheckpointToReach = self.checkpointsToReach[self.numberCheckpointsReached]
 
-		elif self.direction == RIGHT:
-			self.theta += self.dTheta* ((2*math.pi)/360)
+            return True
 
-	def updateLineSensorsPosition(self, track):
-		for sensor in self.lineSensors:
-			sensor.updatePositionRelativeRobot(self.center, self.theta)
-			# Change the movement direction of the robot according to the sensor reading            
-			if sensor.detectLine(track):
-				self.direction = sensor.directionMoveRobot 
+        return False
 
-	def isOnTheTrack(self, track):
-		isOnTheTrack = False;
-		# Iterates through all the border sensors around the robot to check if it is on the track
+    def move(self):
+        if self.direction == FORWARD:
+            x = self.center[0] + math.cos(self.theta) * self.velocity
+            y = self.center[1] + math.sin(self.theta) * self.velocity            
+            self.center = (x, y)
 
-		for sensor in self.edgeSensors:
-			sensor.updatePositionRelativeRobot(self.center, self.edgeRadius)
-			if sensor.detectLine(track):
-				sensor.color = (255, 25, 25)
-				isOnTheTrack = True;
-			else: 
-				sensor.color = (255, 255, 25)
-		return isOnTheTrack
+        elif self.direction == LEFT:
+            self.theta -= self.dTheta * ((2*math.pi)/360)
 
-	def checkRobotInLoop(self):
-		self.loopIterationsCounter += 1
+        elif self.direction == RIGHT:
+            self.theta += self.dTheta* ((2*math.pi)/360)
 
-		if self.checkpointReached():
-			self.loopIterationsCounter = 0
-		elif self.loopIterationsCounter > LOOP_ITERATIONS_LIMIT:
-			return True
-		
-		return False
+        self.iterations += 1
 
-	def checkMissCourse(self):
-		x0 = self.center[0]
-		y0 = self.center[1]
-		x1 = self.penultimateCheckpointReached[0]
-		y1 = self.penultimateCheckpointReached[1]
+    def updateLineSensorsPosition(self, track):
+        for sensor in self.lineSensors:
+            sensor.updatePositionRelativeRobot(self.center, self.theta)
+            # Change the movement direction of the robot according to the sensor reading            
+            if sensor.detectLine(track):
+                self.direction = sensor.directionMoveRobot 
 
-		if ((x1 - x0)**2 + (y1 - y0)**2 <= self.edgeRadius**2):
-			return True
+    def checkIsOnTheTrack(self, track):
+        isOnTheTrack = False;
+        # Iterates through all the border sensors around the robot to check if it is on the track
 
-		return False
+        for sensor in self.edgeSensors:
+            sensor.updatePositionRelativeRobot(self.center, self.edgeRadius)
+            if sensor.detectLine(track):
+                sensor.color = (255, 25, 25)
+                isOnTheTrack = True;
+            else: 
+                sensor.color = (255, 255, 25)
+        return isOnTheTrack
 
-	def show(self, screen):
-		headLength = 30
-		baseLength = 50
-		halfBaseLength = baseLength / 2
+    def checkRobotInLoop(self):
+        self.loopIterationsCounter += 1
 
-		baseX = math.cos(self.theta) * -headLength + self.center[0] 
-		baseY = math.sin(self.theta) * -headLength + self.center[1]
+        if self.checkpointReached():
+            self.loopIterationsCounter = 0
+        elif self.loopIterationsCounter > LOOP_ITERATIONS_LIMIT:
+            return True
+        
+        return False
 
-		x = math.cos(self.theta) * headLength + self.center[0] 
-		y = math.sin(self.theta) * headLength + self.center[1]
-		x1 = math.cos(self.theta + math.pi/2) * halfBaseLength + baseX
-		y1 = math.sin(self.theta + math.pi/2) * halfBaseLength + baseY
-		x2 = math.cos(self.theta - math.pi/2) * halfBaseLength + baseX
-		y2 = math.sin(self.theta - math.pi/2) * halfBaseLength + baseY
+    def checkMissCourse(self):
+        x0 = self.center[0]
+        y0 = self.center[1]
+        x1 = self.penultimateCheckpointReached[0]
+        y1 = self.penultimateCheckpointReached[1]
 
-		pygame.draw.polygon(screen, (0, 0, 0), ((x,y),(x1,y1),(x2,y2)), 2)
+        # Check colision of the robot and the penultimate checkpoint
+        if ((x1 - x0)**2 + (y1 - y0)**2 <= self.edgeRadius**2):
+            return True
 
-		for sensor in self.edgeSensors:
-			sensor.draw(screen)
+        return False
 
-		for sensor in self.lineSensors:
-			sensor.draw(screen)
+    def checkCompleteCourse(self):
+        if self.completeLaps == NUMBER_OF_LAPS_IN_A_COURSE:
+            return True
+        else:
+            return False
+
+    def show(self, screen):
+        headLength = 25
+        baseLength = 40
+        halfBaseLength = baseLength / 2
+
+        baseX = math.cos(self.theta) * -headLength + self.center[0] 
+        baseY = math.sin(self.theta) * -headLength + self.center[1]
+
+        x = math.cos(self.theta) * headLength + self.center[0] 
+        y = math.sin(self.theta) * headLength + self.center[1]
+        x1 = math.cos(self.theta + math.pi/2) * halfBaseLength + baseX
+        y1 = math.sin(self.theta + math.pi/2) * halfBaseLength + baseY
+        x2 = math.cos(self.theta - math.pi/2) * halfBaseLength + baseX
+        y2 = math.sin(self.theta - math.pi/2) * halfBaseLength + baseY
+
+        pygame.draw.polygon(screen, (0, 0, 0), ((x,y),(x1,y1),(x2,y2)), 2)
+
+        for sensor in self.edgeSensors:
+            sensor.draw(screen)
+
+        for sensor in self.lineSensors:
+            sensor.draw(screen)
