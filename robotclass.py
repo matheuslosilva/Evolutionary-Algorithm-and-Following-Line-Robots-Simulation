@@ -14,7 +14,7 @@ class Sensor:
         pygame.draw.circle(screen, self.color, self.position, self.radius)
 
     def detectLine(self, track):
-        return Track.isPointInTrack(self.position, track)
+        return track.isPointInTrack(self.position)
 
 class BorderSensor(Sensor):
     def __init__(self, color, radius, totalNumberEdgeSensors, sensorIndex):
@@ -50,12 +50,12 @@ class Robot:
         self.theta = 0
         self.dTheta = 5
         self.velocity = 4
-        self.direction = 0
+        self.direction = RIGHT
 
         # Parameters for robot evalutaion:
         # -Track proximity sensor
-        self.numberEdgeSensors = 100
-        self.edgeRadius = 30
+        self.numberEdgeSensors = 50
+        self.edgeRadius = 30 
         self.edgeSensors = [BorderSensor((255, 255, 25), 1, self.numberEdgeSensors, i+1) for i in range(self.numberEdgeSensors)]
 
         # -Evaluate the course of the robot
@@ -176,7 +176,7 @@ class Robot:
         x2 = math.cos(self.theta - math.pi/2) * halfBaseLength + baseX
         y2 = math.sin(self.theta - math.pi/2) * halfBaseLength + baseY
 
-        pygame.draw.polygon(screen, (0, 0, 0), ((x,y),(x1,y1),(x2,y2)), 2)
+        pygame.draw.polygon(screen, (1, 1, 1), ((x,y),(x1,y1),(x2,y2)), 2)
 
         for sensor in self.edgeSensors:
             sensor.draw(screen)

@@ -39,9 +39,9 @@ while running:
 
     # To make the simulation run faster, the visual part can be turned off, thus, the fps will no longer be limited
     if show:    
-        FPS = 60 # Frame updates per second
+        FPS = 100 # Frame updates per second
         simulation.show(screen)
-    else: FPS = 10000000
+    else: FPS = 10000000000000 # Unlimited FPS
     pygame.display.update()
     clock.tick(FPS)
 ################################################################################

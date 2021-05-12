@@ -16,12 +16,14 @@ class Track:
 
         # Create a new surface to check if the robot in on the track
         self.newSurface = pygame.Surface((1000,700))
-        self.newSurface.fill((255, 255, 255))
+        self.newSurface.fill((255,255,255))
         self.show(self.newSurface)
+        
 
     def show(self, screen):
         pygame.draw.polygon(screen, (0, 0, 0), self.vertices, 5)
 
-    def isPointInTrack(point, track):
+    def isPointInTrack(self, point):
         # Check whether the spot on the surface is black (track) or not
-        return pygame.surfarray.pixels2d(track.newSurface)[round(point[0])][round(point[1])] == 0
+        return pygame.Surface.get_at(self.newSurface, (round(point[0]), round(point[1]))) == (0,0,0)
+        

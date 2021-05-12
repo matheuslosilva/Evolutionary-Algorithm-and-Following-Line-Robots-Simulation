@@ -18,7 +18,7 @@ class Simulation:
         self.curRobotIterations = 0
 
         # Earn points 
-        self.robotCompleteCourse = False # TODO
+        self.robotCompleteCourse = False
         self.curRobotCheckpointsReached = 0
         self.curRobotCompleteLaps = 0
 
@@ -73,23 +73,37 @@ class Simulation:
             self.robotFailed = True
             print("robot missed the course")
 
+        if self.robotCompleteCourse:
+            print("Complete Coourse")
 
         if self.robotFailed or self.robotCompleteCourse:
             # Update the number of iterations, checkpoints and laps made by the robot on the course
             self.curRobotIterations = self.curRobot.iterations
+            
             self.curRobotCheckpointsReached = self.curRobot.numberCheckpointsReached
             self.curRobotCompleteLaps = self.curRobot.completeLaps
 
             self.fillRobotReport()
-
             self.evolutive.evaluateRobotFitness(self.curRobotIndex, self.curRobotReport)
-
+            
             self.robotFailed = False
             self.robotCompleteCourse = False
             self.curRobotIndex += 1
+
+            self.curRobotReport = {
+                "robotLeftTrack" : 0,
+                "robotInLoop" : 0,
+                "robotMissCourse" : 0,
+                "robotIterations" : 0,
+                "completeCourse" : 0,
+                "completeLaps" : 0,
+                "reachedCheckpoints" : 0    
+            }
              
             if self.curRobotIndex == POP_SIZE:
-                print(self.evolutive.fitnessPop) 
+                self.evolutive.newPopulation()
+                self.evolutive.fitnessPop = [0 for _ in range(POP_SIZE)]
+
                 self.curRobotIndex = 0 # TODO evolutive part of the simulation here
 
             self.curRobot = self.evolutive.robotInit(self.track, self.curRobotIndex)
